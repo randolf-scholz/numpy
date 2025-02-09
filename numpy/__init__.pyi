@@ -5,7 +5,6 @@ import mmap
 import ctypes as ct
 import array as _array
 import datetime as dt
-import enum
 from abc import abstractmethod
 from types import EllipsisType, ModuleType, TracebackType, MappingProxyType, GenericAlias
 from decimal import Decimal
@@ -442,6 +441,8 @@ from numpy._core.shape_base import (
     unstack,
 )
 
+from ._expired_attrs_2_0 import __expired_attributes__ as __expired_attributes__
+
 from numpy.lib import (
     scimath as emath,
 )
@@ -504,6 +505,8 @@ from numpy.lib._function_base_impl import (
     interp,
     quantile,
 )
+
+from numpy._globals import _CopyMode
 
 from numpy.lib._histograms_impl import (
     histogram_bin_edges,
@@ -1181,7 +1184,6 @@ newaxis: Final[None] = None
 # not in __all__
 __NUMPY_SETUP__: Final[L[False]] = False
 __numpy_submodules__: Final[set[LiteralString]] = ...
-__expired_attributes__: Final[dict[LiteralString, LiteralString]]
 __former_attrs__: Final[_FormerAttrsDict] = ...
 __future_scalars__: Final[set[L["bytes", "str", "object"]]] = ...
 __array_api_version__: Final[L["2023.12"]] = "2023.12"
@@ -4126,6 +4128,9 @@ float32: TypeAlias = floating[_32Bit]
 
 # either a C `double`, `float`, or `longdouble`
 class float64(floating[_64Bit], float):  # type: ignore[misc]
+    def __new__(cls, x: _ConvertibleToFloat | None = ..., /) -> Self: ...
+
+    #
     @property
     def itemsize(self) -> L[8]: ...
     @property
@@ -4259,7 +4264,15 @@ longdouble: TypeAlias = floating[_NBitLongDouble]
 # describing the two 64 bit floats representing its real and imaginary component
 
 class complexfloating(inexact[_NBit1, complex], Generic[_NBit1, _NBit2]):
-    def __init__(self, value: _ConvertibleToComplex | None = ..., /) -> None: ...
+    @overload
+    def __init__(
+        self,
+        real: complex | SupportsComplex | SupportsFloat | SupportsIndex = ...,
+        imag: complex | SupportsFloat | SupportsIndex = ...,
+        /,
+    ) -> None: ...
+    @overload
+    def __init__(self, real: _ConvertibleToComplex | None = ..., /) -> None: ...
 
     @property
     def real(self) -> floating[_NBit1]: ...  # type: ignore[override]
@@ -4338,6 +4351,17 @@ class complexfloating(inexact[_NBit1, complex], Generic[_NBit1, _NBit2]):
 complex64: TypeAlias = complexfloating[_32Bit, _32Bit]
 
 class complex128(complexfloating[_64Bit, _64Bit], complex):  # type: ignore[misc]
+    @overload
+    def __new__(
+        cls,
+        real: complex | SupportsComplex | SupportsFloat | SupportsIndex = ...,
+        imag: complex | SupportsFloat | SupportsIndex = ...,
+        /,
+    ) -> Self: ...
+    @overload
+    def __new__(cls, real: _ConvertibleToComplex | None = ..., /) -> Self: ...
+
+    #
     @property
     def itemsize(self) -> L[16]: ...
     @property
@@ -4749,12 +4773,26 @@ class character(flexible[_CharacterItemT_co], Generic[_CharacterItemT_co]):
 
 class bytes_(character[bytes], bytes):
     @overload
-    def __init__(self, value: object = ..., /) -> None: ...
+    def __new__(cls, o: object = ..., /) -> Self: ...
     @overload
-    def __init__(self, value: str, /, encoding: str = ..., errors: str = ...) -> None: ...
+    def __new__(cls, s: str, /, encoding: str, errors: str = ...) -> Self: ...
+
+    #
+    @overload
+    def __init__(self, o: object = ..., /) -> None: ...
+    @overload
+    def __init__(self, s: str, /, encoding: str, errors: str = ...) -> None: ...
+
+    #
     def __bytes__(self, /) -> bytes: ...
 
 class str_(character[str], str):
+    @overload
+    def __new__(cls, value: object = ..., /) -> Self: ...
+    @overload
+    def __new__(cls, value: bytes, /, encoding: str = ..., errors: str = ...) -> Self: ...
+
+    #
     @overload
     def __init__(self, value: object = ..., /) -> None: ...
     @overload
@@ -4918,11 +4956,6 @@ bitwise_invert = invert
 bitwise_right_shift = right_shift
 permute_dims = transpose
 pow = power
-
-class _CopyMode(enum.Enum):
-    ALWAYS: L[True]
-    IF_NEEDED: L[False]
-    NEVER: L[2]
 
 class errstate:
     def __init__(
