@@ -310,11 +310,16 @@ assert_type(abs(m8_delta), np.timedelta64[dt.timedelta])
 assert_type(abs(b_), np.bool)
 
 # Time structures
-
+m8_as_int: np.integer = m8
+m8_as_timedelta: dt.timedelta = m8
+assert_type(M8, np.datetime64)
+assert_type(i, int)
 assert_type(M8 + m8, np.datetime64)
 assert_type(M8 + i, np.datetime64)
 assert_type(M8 + i8, np.datetime64)
 assert_type(M8 - M8, np.timedelta64)
+assert_type(M8, np.datetime64)
+assert_type(i, int)
 assert_type(M8 - i, np.datetime64)
 assert_type(M8 - i8, np.datetime64)
 

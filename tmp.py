@@ -134,7 +134,7 @@ assert_type(np_dt_nat - np_td_int,  "np.datetime64[None]")
 assert_type(np_dt_nat - np_td_nat,  "np.datetime64[None]")
 # fmt: on
 
-#
+
 # class Timedelta(Protocol):
 #     def __add__(self, other: Self, /) -> Self: ...
 #     def __radd__(self, other: Self, /) -> Self: ...
